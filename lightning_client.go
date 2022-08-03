@@ -1390,6 +1390,7 @@ func (s *lightningClient) AddInvoice(ctx context.Context,
 		Expiry:          in.Expiry,
 		CltvExpiry:      in.CltvExpiry,
 		Private:         true,
+		IsAmp:           in.Amp,
 	}
 
 	if in.Preimage != nil {
@@ -1614,11 +1615,13 @@ func unmarshalInvoice(resp *lnrpc.Invoice) (*Invoice, error) {
 	// can set on our invoice.
 	case lnrpc.Invoice_SETTLED:
 		invoice.State = channeldb.ContractSettled
-		preimage, err := lntypes.MakePreimage(resp.RPreimage)
-		if err != nil {
-			return nil, err
+		if !resp.IsAmp {
+			preimage, err := lntypes.MakePreimage(resp.RPreimage)
+			if err != nil {
+				return nil, err
+			}
+			invoice.Preimage = &preimage
 		}
-		invoice.Preimage = &preimage
 
 	case lnrpc.Invoice_CANCELED:
 		invoice.State = channeldb.ContractCanceled
